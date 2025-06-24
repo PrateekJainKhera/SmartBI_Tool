@@ -1,73 +1,188 @@
-﻿<%-- File: Site.Master (FINAL, WITH PDF EXPORT LIBRARIES) --%>
-<%@ Master Language="VB" AutoEventWireup="false" CodeBehind="Site.master.vb" Inherits="SmartBI_Tool.SiteMaster" %>
+﻿<%@ Master Language="VB" AutoEventWireup="false" CodeBehind="Site.master.vb" Inherits="SmartBI_Tool.SiteMaster" %>
 
 <!DOCTYPE html>
 <html lang="en">
 <head runat="server">
-    <meta charset="utf-8" />
+    <meta charset="utf-g" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%: Page.Title %> - SmartBI Tool</title>
+    <title><%: Page.Title %> - Insightify BI</title>
 
     <asp:PlaceHolder runat="server">
         <%: Scripts.Render("~/bundles/modernizr") %>
     </asp:PlaceHolder>
-
     <webopt:bundlereference runat="server" path="~/Content/css" />
     <link href="~/favicon.ico" rel="shortcut icon" type="image/x-icon" />
 
+    <%-- DevExtreme & Font Awesome --%>
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/23.2.3/css/dx.light.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <%-- Google Fonts for a premium feel --%>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <%-- ========================================================== --%>
+    <%-- === NEW PROFESSIONAL STYLESHEET === --%>
+    <%-- ========================================================== --%>
+    <style>
+        :root {
+            --sidebar-bg: #1a202c; /* A very dark blue/gray */
+            --sidebar-text: #a0aec0; /* Light gray for text */
+            --sidebar-hover-bg: #2d3748;
+            --sidebar-active-bg: #2b6cb0; /* A nice blue for active state */
+            --page-bg: #f7fafc; /* Very light gray for the page background */
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--page-bg);
+            color: var(--text-primary);
+        }
+
+        /* --- New Sidebar Styles --- */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 10px 5px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .sidebar-header .navbar-brand {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+        }
+        .sidebar-header .navbar-brand .fa-chart-pie {
+            color: #4299e1;
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item a {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .nav-item a .fa-fw {
+            margin-right: 12px;
+            font-size: 1.1em;
+            width: 20px;
+        }
+        .nav-item a:hover {
+            background-color: var(--sidebar-hover-bg);
+            color: #fff;
+        }
+        .nav-item.active a {
+            background-color: var(--sidebar-active-bg);
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        /* --- Main Content Area --- */
+        .main-content {
+            margin-left: 260px; /* Same as sidebar width */
+            padding: 30px;
+            transition: margin-left 0.3s ease;
+        }
+        
+        /* Generic Card Style for content */
+        .content-card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            border: 1px solid var(--border-color);
+        }
+
+    </style>
 </head>
 <body>
-    <form runat="server">
+    <form id="form1" runat="server">
         <asp:ScriptManager runat="server">
             <Scripts>
                 <asp:ScriptReference Name="MsAjaxBundle" />
                 <asp:ScriptReference Name="jquery" />
                 <asp:ScriptReference Path="~/Scripts/bootstrap.bundle.js" /> 
-                <asp:ScriptReference Name="WebForms.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebForms.js" />
-                <asp:ScriptReference Name="WebUIValidation.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebUIValidation.js" />
-                <asp:ScriptReference Name="MenuStandards.js" Assembly="System.Web" Path="~/Scripts/WebForms/MenuStandards.js" />
-                <asp:ScriptReference Name="GridView.js" Assembly="System.Web" Path="~/Scripts/WebForms/GridView.js" />
-                <asp:ScriptReference Name="DetailsView.js" Assembly="System.Web" Path="~/Scripts/WebForms/DetailsView.js" />
-                <asp:ScriptReference Name="TreeView.js" Assembly="System.Web" Path="~/Scripts/WebForms/TreeView.js" />
-                <asp:ScriptReference Name="WebParts.js" Assembly="System.Web" Path="~/Scripts/WebForms/WebParts.js" />
-                <asp:ScriptReference Name="Focus.js" Assembly="System.Web" Path="~/Scripts/WebForms/Focus.js" />
                 <asp:ScriptReference Name="WebFormsBundle" />
             </Scripts>
         </asp:ScriptManager>
 
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark">
-            <div class="container">
-                <a class="navbar-brand" runat="server" href="~/">SmartBI Tool</a>
-                <div class="collapse navbar-collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/User/ReportViewer.aspx">View Reports</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/Admin/ReportManager.aspx">Manage Reports</a></li>
-                    </ul>
-                </div>
+        <%-- NEW FIXED SIDEBAR NAVIGATION --%>
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a class="navbar-brand" runat="server" href="~/">
+                    <i class="fas fa-chart-pie"></i>
+                    Insightify
+                </a>
             </div>
-        </nav>
-        <div class="container body-content">
+            <ul class="nav-list">
+                <li class="nav-item" id="navViewReports">
+                    <a class="nav-link" runat="server" href="~/User/ReportViewer.aspx">
+                        <i class="fas fa-fw fa-chart-line"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item" id="navManageReports">
+                    <a class="nav-link" runat="server" href="~/Admin/ReportManager.aspx">
+                        <i class="fas fa-fw fa-cogs"></i> Report Manager
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <%-- MAIN CONTENT AREA --%>
+        <main class="main-content">
             <asp:ContentPlaceHolder ID="MainContent" runat="server">
             </asp:ContentPlaceHolder>
-            <hr />
-            <footer>
-                <p>© <%: DateTime.Now.Year %> - My SmartBI Application</p>
+
+            <footer class="mt-5 text-center text-muted">
+                <p>© <%: DateTime.Now.Year %> - Insightify BI Platform</p>
             </footer>
-        </div>
+        </main>
     </form>
     
-    <!-- DevExtreme JS -->
+    <%-- DevExtreme JS & Exporting Libraries --%>
     <script src="https://cdn3.devexpress.com/jslib/23.2.3/js/dx.all.js"></script>
-        <!-- jsPDF is required for PDF export -->
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-
-
-
-    <!-- === THIS IS THE NEW ADDITION FOR PDF EXPORT === -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-    <script src="https://cdn3.devexpress.com/jslib/23.2.3/js/dx.pdf-exporter.min.js"></script>
-    <!-- ============================================== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdn3.devexpress.com/jslib/23.2.3/js/dx.all-exporter.js"></script>
+    
+    <script>
+        // Script to highlight the active menu item based on the current page
+        $(function() {
+            const path = window.location.pathname.toLowerCase();
+            if (path.includes('reportmanager.aspx')) {
+                $('#navManageReports').addClass('active');
+            } else if (path.includes('reportviewer.aspx')) {
+                $('#navViewReports').addClass('active');
+            }
+        });
+    </script>
 </body>
 </html>

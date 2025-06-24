@@ -1,188 +1,244 @@
-﻿<%@ Page Title="Report Viewer" Language="vb" MasterPageFile="~/Site.Master" AutoEventWireup="false" CodeBehind="ReportViewer.aspx.vb" Inherits="SmartBI_Tool.ReportViewer" %>
+﻿<%@ Page Title="Dashboard" Language="vb" MasterPageFile="~/Site.Master" AutoEventWireup="false" CodeBehind="ReportViewer.aspx.vb" Inherits="SmartBI_Tool.ReportViewer" %>
 
 <asp:Content ID="BodyContent" ContentPlaceHolderID="MainContent" runat="server">
     <style>
-        .menu-item { display: inline-block; padding: 8px 15px; margin: 5px; border: 1px solid #ddd; background-color: #f7f7f7; cursor: pointer; border-radius: 4px; font-weight: 500; }
-        .menu-item:hover { background-color: #e9e9e9; border-color: #ccc; }
-        #parameterContainer { display:none; margin-top: 20px; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9; border-radius: 5px; }
-        .report-level-container { margin-top: 25px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .report-level-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; gap: 15px; }
-        .chart-container { height: 400px; margin-bottom: 30px; }
-        #loadingSpinner { display: none; margin-top: 20px; text-align: center; padding: 40px; font-size: 1.2em; }
-        .report-actions { display: flex; align-items: center; gap: 10px; }
+        .page-header { margin-bottom: 2.5rem; }
+        .page-header h2 { font-family: 'Poppins', sans-serif; font-weight: 700; color: #1a202c; }
+        .viewer-container { display: flex; gap: 2.5rem; align-items: flex-start; }
+        .report-sidebar { flex: 0 0 300px; }
+        .report-content-area { flex-grow: 1; min-width: 0; }
+        .report-library-card, #parameterContainer, .report-level-container { background-color: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); border: 1px solid var(--border-color); }
+        .report-library-card h4, .report-level-header h3 { font-family: 'Poppins', sans-serif; font-weight: 600; color: #1e293b; }
+        .report-library-card h4 { display: flex; align-items: center; gap: 10px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
+        #reportMenu { display: flex; flex-direction: column; gap: 8px; }
+        .menu-item { padding: 12px 16px; cursor: pointer; border-radius: 8px; font-weight: 500; color: #475569; background-color: transparent; border: 1px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .menu-item:hover { background-color: #f1f5f9; color: var(--brand-color, #4f46e5); }
+        .menu-item.active { background-color: var(--brand-color, #4f46e5); color: white; font-weight: 600; border-color: var(--brand-color, #4f46e5); box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3); transform: translateY(-2px); }
+        .menu-item .fa-fw { width: 20px; text-align: center; }
+        #breadcrumb-container { margin-bottom: 1.5rem; }
+        .breadcrumb { background-color: transparent; padding: 0; font-size: 0.9em; }
+        .breadcrumb-item a { text-decoration: none; color: var(--brand-color, #4f46e5); font-weight: 500; }
+        .breadcrumb-item.active { color: var(--text-secondary); }
+        #parameterContainer { margin-bottom: 25px; }
+        .report-level-container { margin-top: 25px; }
+        #loadingSpinner { text-align: center; padding: 50px; }
     </style>
 
-    <h2>Report Viewer</h2>
-    <p>Select a report to begin.</p>
+    <div class="page-header">
+        <h2>Analytics Dashboard</h2>
+        <p class="text-secondary">Select a report from the library to visualize data and gain insights.</p>
+    </div>
 
-    <div id="reportMenu"></div>
-    <div id="parameterContainer"></div>
-    <div id="reportLevelsContainer"></div>
-    <div id="loadingSpinner"><strong>Loading...</strong></div>
+    <div class="viewer-container">
+        <aside class="report-sidebar">
+            <div class="report-library-card">
+                <h4><i class="fas fa-book-open text-primary"></i> Report Library</h4>
+                <div id="reportMenu"><div class="text-center p-4"><div class="spinner-border text-secondary" role="status"></div></div></div>
+            </div>
+        </aside>
 
+        <main class="report-content-area">
+            <div id="welcomeMessage">
+                <div class="alert alert-primary border-0" style="background-color: #eef2ff; color: #3730a3;">
+                    <h4 class="alert-heading"><i class="fas fa-info-circle"></i> Welcome to Insightify!</h4>
+                    <p>Your journey into data begins here. Please select a report from the library on the left to get started.</p>
+                </div>
+            </div>
+            
+            <div id="breadcrumb-container"></div>
+            <div id="parameterContainer" class="mb-4" style="display:none;"></div>
+            <div id="reportLevelsContainer"></div>
+            <div id="loadingSpinner" style="display:none;">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h5 class="mt-3 text-secondary">Loading Report...</h5>
+            </div>
+        </main>
+    </div>
+    
     <script>
         $(function () {
-            // =================================================================
-            // 1. INITIAL MENU LOADING
-            // =================================================================
-            $.ajax({
-                type: "POST", url: "/Web_Services/ReportService.asmx/GetReportMenu", contentType: "application/json; charset=utf-8", dataType: "json"
-            }).done(function (response) {
-                const menuData = JSON.parse(response.d);
-                $("#reportMenu").empty();
-                menuData.forEach(item => $("#reportMenu").append(`<a href="#" class="menu-item" data-report-id="${item.ReportID}">${item.ReportName}</a>`));
+            let breadcrumbTrail = [];
+
+            function renderBreadcrumbs() {
+                const $container = $('#breadcrumb-container').empty();
+                if (breadcrumbTrail.length === 0) return;
+                const nav = $('<nav aria-label="breadcrumb"><ol class="breadcrumb bg-light p-2 rounded"></ol></nav>');
+                breadcrumbTrail.forEach((crumb, index) => {
+                    const li = $('<li class="breadcrumb-item"></li>');
+                    if (index === breadcrumbTrail.length - 1) {
+                        li.addClass('active').attr('aria-current', 'page').text(crumb.name);
+                    } else {
+                        const link = $(`<a href="#">${crumb.name}</a>`);
+                        link.data('level-data', crumb);
+                        li.append(link);
+                    }
+                    nav.find('ol').append(li);
+                });
+                $container.append(nav);
+            }
+
+            $('#breadcrumb-container').on('click', 'a', function (e) {
+                e.preventDefault();
+                const crumb = $(this).data('level-data');
+                if (!crumb) return;
+                breadcrumbTrail = breadcrumbTrail.slice(0, crumb.level);
+                renderBreadcrumbs();
+                loadReport(crumb.reportId, crumb.name, crumb.level, crumb.params);
             });
 
-            // =================================================================
-            // 2. HANDLE MENU CLICKS (CHECKS FOR PARAMETERS)
-            // =================================================================
+            $.ajax({
+                type: "POST", url: "/Web_Services/ReportService.asmx/GetReportMenu",
+                contentType: "application/json", dataType: "json"
+            }).done(function (response) {
+                const menuData = JSON.parse(response.d);
+                const $reportMenu = $("#reportMenu").empty();
+                if (menuData.length === 0) { $reportMenu.html('<p class="text-muted text-center">No active reports found.</p>'); return; }
+                menuData.forEach(item => {
+                    $reportMenu.append(`<a href="#" class="menu-item" data-report-id="${item.ReportID}"><i class="fas fa-fw fa-file-alt"></i> ${item.ReportName}</a>`);
+                });
+            });
+
             $("#reportMenu").on("click", ".menu-item", function (e) {
                 e.preventDefault();
+                $("#reportMenu .menu-item").removeClass("active");
+                $(this).addClass("active");
                 const reportId = $(this).data("report-id");
-                const reportName = $(this).text();
+                const reportName = $(this).clone().children().remove().end().text().trim();
                 $("#reportLevelsContainer").empty();
                 $("#parameterContainer").empty().hide();
+                $("#welcomeMessage").hide();
+                breadcrumbTrail = [];
+                renderBreadcrumbs();
+                checkAndLoadParameters(reportId, reportName);
+            });
+
+            function checkAndLoadParameters(reportId, reportName) {
+                $("#loadingSpinner").show();
                 $.ajax({
-                    type: "POST", url: "/Web_Services/ReportService.asmx/GetReportParameters", data: JSON.stringify({ reportId: reportId }), contentType: "application/json; charset=utf-8", dataType: "json",
-                    beforeSend: () => $("#loadingSpinner").show(),
-                    complete: () => $("#loadingSpinner").hide()
+                    type: "POST", url: "/Web_Services/ReportService.asmx/GetReportParameters",
+                    data: JSON.stringify({ reportId }), contentType: "application/json", dataType: "json"
                 }).done(function (response) {
                     const parameters = JSON.parse(response.d);
                     if (parameters && parameters.length > 0) {
                         buildParameterForm(reportId, reportName, parameters);
                     } else {
-                        loadReport(reportId, reportName, null, 0);
+                        loadReport(reportId, reportName, 1, null);
                     }
-                });
-            });
-
-            // =================================================================
-            // 3. BUILD THE PARAMETER INPUT FORM
-            // =================================================================
-            function buildParameterForm(reportId, reportName, parameters) {
-                const formContainer = $("#parameterContainer");
-                let formItems = [];
-                parameters.forEach(p => {
-                    let item = { dataField: p.ParameterName, label: { text: p.Label }, editorType: "dxTextBox" };
-                    if (p.UIType === 'dropdown' && p.Options && p.Options.length > 0) {
-                        item.editorType = "dxSelectBox";
-                        item.editorOptions = { dataSource: p.Options, displayExpr: Object.keys(p.Options[0])[1], valueExpr: Object.keys(p.Options[0])[0] };
-                        item.validationRules = [{ type: "required", message: `${p.Label} is required.` }];
-                    }
-                    formItems.push(item);
-                });
-                formItems.push({ itemType: "button", horizontalAlignment: "left", buttonOptions: { text: "Run Report", type: "default", useSubmitBehavior: true } });
-                const form = formContainer.dxForm({ formData: {}, items: formItems, validationGroup: "reportParams" }).dxForm("instance");
-                formContainer.on("submit", function (e) {
-                    e.preventDefault();
-                    if (form.validate().isValid) {
-                        loadReport(reportId, reportName, form.option("formData"), 0);
-                        formContainer.empty().hide();
-                    }
-                });
-                formContainer.show();
+                }).fail(() => DevExpress.ui.notify("Error checking parameters.", "error"))
+                    .always(() => $("#loadingSpinner").hide());
             }
 
-            // =================================================================
-            // 4. CORE REPORT & DRILLDOWN LOADING FUNCTION
-            // =================================================================
-            function loadReport(reportId, reportName, parameters, level) {
+            function buildParameterForm(reportId, reportName, parameters) {
+                const $formContainer = $("#parameterContainer");
+                $formContainer.show();
+                let formItems = [];
+                parameters.forEach(p => {
+                    let fieldName = p.ParameterName.substring(1);
+                    let editorOptions = {};
+                    if (p.UIType === 'DropDown' && p.Options && p.Options.length > 0) {
+                        editorOptions = {
+                            dataSource: p.Options,
+                            displayExpr: Object.keys(p.Options[0] || {})[0],
+                            valueExpr: Object.keys(p.Options[0] || {})[0]
+                        };
+                    }
+                    formItems.push({
+                        dataField: fieldName,
+                        label: { text: p.Label },
+                        editorType: p.UIType === 'DropDown' ? 'dxSelectBox' : 'dxTextBox',
+                        editorOptions: editorOptions,
+                        validationRules: [{ type: "required" }]
+                    });
+                });
+                formItems.push({ itemType: "button", horizontalAlignment: "left", buttonOptions: { text: "Run Report", icon: "check", type: "default", useSubmitBehavior: true } });
+                const form = $formContainer.dxForm({ formData: {}, items: formItems, colCount: 3 }).dxForm("instance");
+                $formContainer.on("submit", function (e) {
+                    e.preventDefault();
+                    if (form.validate().isValid) {
+                        let userParams = {};
+                        const formData = form.option("formData");
+                        for (const key in formData) { userParams['@' + key] = formData[key]; }
+                        loadReport(reportId, reportName, 1, userParams);
+                        $formContainer.hide().empty();
+                    }
+                });
+            }
+
+            function loadReport(reportId, reportName, level, parameters) {
+                if (level === 1) {
+                    breadcrumbTrail = [{ name: reportName, level: 1, reportId: reportId, params: parameters }];
+                }
+                renderBreadcrumbs();
                 $('.report-level-container').filter(function () { return $(this).data('level') >= level; }).remove();
                 $("#loadingSpinner").show();
                 $.ajax({
-                    type: "POST", url: "/Web_Services/ReportService.asmx/ExecuteReportQuery", data: JSON.stringify({ reportId: reportId, parameters: parameters }), contentType: "application/json; charset=utf-8", dataType: "json"
+                    type: "POST", url: "/Web_Services/ReportService.asmx/ExecuteReportQuery",
+                    data: JSON.stringify({ reportId, level, parameters }), contentType: "application/json", dataType: "json"
                 }).done(function (response) {
                     const result = JSON.parse(response.d);
-                    if (result.error) {
-                        alert("Error executing report: " + result.error);
-                        $("#loadingSpinner").hide(); return;
-                    }
+                    if (result.error) { DevExpress.ui.notify(result.error, 'error', 5000); return; }
                     const levelId = "report-level-" + level;
-                    let headerHtml = `<div class="report-level-header"><h3>${reportName}</h3><div class="report-actions"><div id="chartTypeSelector-${level}"></div><div id="exportExcelBtn-${level}"></div><div id="exportPdfBtn-${level}"></div>${level > 0 ? `<div id="backBtn-${level}"></div>` : ''}</div></div>`;
-                    const reportHtml = `<div id="${levelId}" class="report-level-container" data-level="${level}">${headerHtml}<div class="chart-container"></div><div class="grid-container"></div></div>`;
+                    let headerHtml = `<div class="report-level-header d-flex justify-content-between align-items-center"><h3>${reportName}</h3><div id="exportExcelBtn-${level}"></div></div>`;
+                    const reportHtml = `<div id="${levelId}" class="report-level-container" data-level="${level}" data-report-id="${reportId}">${headerHtml}<div class="chart-container mt-3"></div><div class="grid-container mt-4"></div></div>`;
                     $("#reportLevelsContainer").append(reportHtml);
-                    const $currentLevel = $("#" + levelId);
-
-                    const chart = $currentLevel.find(".chart-container").dxChart(
-                        buildChartOptions(result.Data, reportName, result.ChartSettings, reportId, level)
-                    ).dxChart("instance");
-
-                    const grid = $currentLevel.find(".grid-container").dxDataGrid({
-                        dataSource: { store: new DevExpress.data.ArrayStore({ data: result.Data, key: result.ChartSettings.ArgumentField || 'ID' }) },
-                        showBorders: true, columnAutoWidth: true, hoverStateEnabled: true,
-                        onRowClick: function (e) {
-                            if (!e.data || e.rowType !== 'data' || !e.column) return;
-                            handleDrilldown(reportId, e.column.dataField, e.data, level);
-                        },
-                        onContentReady: function (e) { e.component.getColumns().forEach(function (column) { if (column.dataField && column.dataField.toLowerCase().includes('date')) { e.component.columnOption(column.dataField, "dataType", "date"); } }); }
+                    const grid = $(`#${levelId} .grid-container`).dxDataGrid({
+                        dataSource: result.Data, showBorders: true, columnAutoWidth: true, hoverStateEnabled: true, filterRow: { visible: true }, scrolling: { mode: 'virtual' },
+                        onRowClick: (e) => { if (e.data && e.rowType === 'data') handleDrilldown(reportId, level, e.data); }
                     }).dxDataGrid("instance");
-
-                    if (level > 0) { $(`#backBtn-${level}`).dxButton({ text: "Back", icon: "back", onClick: function () { $currentLevel.remove(); } }); }
-                    $(`#exportExcelBtn-${level}`).dxButton({ text: "Excel", icon: "exportxlsx", hint: "Export to Excel", onClick: function () { DevExpress.excelExporter.exportDataGrid({ component: grid, fileName: `${reportName}` }); } });
-                    $(`#exportPdfBtn-${level}`).dxButton({ text: "PDF", icon: "exportpdf", hint: "Export to PDF", onClick: function () { const { jsPDF } = window.jspdf; const doc = new jsPDF(); DevExpress.pdfExporter.exportChart({ component: chart, doc, rect: [10, 15, 190, 90] }).then(() => DevExpress.pdfExporter.exportDataGrid({ component: grid, doc, y: 115 })).then(() => doc.save(`${reportName}.pdf`)); } });
-                    if (result.ChartSettings.Type !== 'treemap') {
-                        $(`#chartTypeSelector-${level}`).dxSelectBox({
-                            dataSource: ['bar', 'line', 'spline', 'area', 'pie', 'donut'],
-                            value: result.ChartSettings.Type, width: 120,
-                            onValueChanged: function (e) {
-                                result.ChartSettings.Type = e.value;
-                                chart.option(buildChartOptions(result.Data, reportName, result.ChartSettings, reportId, level));
-                            }
-                        });
-                    } else { $(`#chartTypeSelector-${level}`).hide(); }
-
+                    if (result.ChartSettings.Type !== 'GridOnly' && result.Data.length > 0) {
+                        const chartOptions = buildChartOptions(result.Data, reportName, result.ChartSettings, reportId, level);
+                        if (chartOptions) { $(`#${levelId} .chart-container`).dxChart(chartOptions); }
+                    }
+                    $(`#exportExcelBtn-${level}`).dxButton({ text: "Export", icon: "exportxlsx", onClick: () => DevExpress.excelExporter.exportDataGrid({ component: grid, fileName: `${reportName}_Level${level}` }) });
                 }).always(() => $("#loadingSpinner").hide());
             }
 
-            // =================================================================
-            // 5. HELPER FUNCTION TO BUILD CHART OPTIONS (DEFINITIVE VERSION)
-            // =================================================================
             function buildChartOptions(data, reportName, settings, reportId, level) {
-                const argumentField = settings.ArgumentField || (data.length > 0 ? Object.keys(data[0])[0] : '');
-                const valueField = settings.ValueField || (data.length > 0 ? Object.keys(data[0])[1] : '');
-
-                let options = { dataSource: data, title: reportName, tooltip: { enabled: true }, legend: { visible: true, horizontalAlignment: 'center', verticalAlignment: 'bottom' } };
-                const pointClickHandler = (e) => handleDrilldown(reportId, argumentField, e.target.data, level);
-
-                if (settings.Type === 'treemap') {
-                    options.type = 'treemap';
-                    options.labelField = 'CustomerName';
-                    options.valueField = 'TotalAmount';
-                    options.colorField = 'CustomerName';
-                    options.onClick = (e) => handleDrilldown(reportId, 'CustomerName', e.node.data, level);
-                } else if (['pie', 'donut'].includes(settings.Type)) {
-                    options.type = settings.Type;
-                    options.series = [{ argumentField: argumentField, valueField: valueField, label: { visible: true, connector: { visible: true }, format: 'percent', customizeText: (arg) => `${arg.argumentText}: ${arg.percentText}` } }];
-                    options.onPointClick = pointClickHandler;
-                } else {
-                    options.legend.visible = false;
-                    options.commonSeriesSettings = { argumentField: argumentField, type: settings.Type || 'bar' };
-                    options.series = [{ valueField: valueField, name: reportName }];
-                    options.onPointClick = pointClickHandler;
-                }
-                return options;
+                if (!settings.ArgumentField || !data || data.length === 0) return null;
+                let valueField = Object.keys(data[0]).find(key => typeof data[0][key] === 'number' && !key.toLowerCase().includes('id'));
+                const pointClickHandler = (e) => handleDrilldown(reportId, level, e.target.data);
+                return {
+                    dataSource: data, palette: "Violet",
+                    commonSeriesSettings: { argumentField: settings.ArgumentField, type: settings.Type || 'bar' },
+                    series: [{ valueField: valueField, name: reportName }],
+                    onPointClick: pointClickHandler, tooltip: { enabled: true, customizeTooltip: (arg) => ({ text: `${arg.argumentText}: ${arg.valueText}` }) },
+                    legend: { visible: false }
+                };
             }
 
-            // =================================================================
-            // 6. DRILLDOWN HANDLER (DEFINITIVE VERSION)
-            // =================================================================
-            function handleDrilldown(parentReportId, triggerColumn, selectedDataRow, currentLevel) {
-                if (!triggerColumn || !selectedDataRow) return;
-
+            function handleDrilldown(reportId, currentLevel, selectedDataRow) {
+                if (!selectedDataRow) return;
+                $("#loadingSpinner").show();
                 $.ajax({
-                    type: "POST", url: "/Web_Services/ReportService.asmx/GetDrilldownInfo", data: JSON.stringify({ parentReportId: parentReportId, triggerColumn: triggerColumn }), contentType: "application/json; charset=utf-8", dataType: "json"
-                }).done(function (response) {
-                    const drillInfo = response.d;
-                    if (drillInfo && drillInfo.ChildReportID > 0) {
-                        // Build a parameter object using ALL available data from the clicked row.
-                        // The backend will pick only the parameters it needs.
-                        let parameters = {};
-                        for (const key in selectedDataRow) {
-                            parameters['@' + key] = selectedDataRow[key];
+                    type: "POST", url: "/Web_Services/ReportService.asmx/GetLevelConfig",
+                    data: JSON.stringify({ reportId, level: currentLevel }), contentType: "application/json", dataType: "json"
+                }).done(function (configResponse) {
+                    const config = JSON.parse(configResponse.d);
+                    if (!config || !config.DrillDownKeyField) { $("#loadingSpinner").hide(); return; }
+                    const keyToPass = config.DrillDownKeyField;
+                    $.ajax({
+                        type: "POST", url: "/Web_Services/ReportService.asmx/GetDrilldownInfo",
+                        data: JSON.stringify({ parentReportId: reportId, currentLevel: currentLevel }),
+                        contentType: "application/json", dataType: "json"
+                    }).done(function (drillInfoResponse) {
+                        const drillInfo = drillInfoResponse.d;
+                        if (drillInfo && drillInfo.NextLevel > 0) {
+                            let parameters = {};
+                            let actualKeyInRow = Object.keys(selectedDataRow).find(k => k.toLowerCase() === keyToPass.toLowerCase());
+                            if (actualKeyInRow) {
+                                parameters['@' + keyToPass] = selectedDataRow[actualKeyInRow];
+                                let dynamicTitle = drillInfo.NextLevelTitle.replace('@' + keyToPass, selectedDataRow[actualKeyInRow]);
+                                breadcrumbTrail = breadcrumbTrail.slice(0, currentLevel);
+                                breadcrumbTrail.push({ name: dynamicTitle, level: drillInfo.NextLevel, reportId: reportId, params: parameters });
+                                loadReport(reportId, dynamicTitle, drillInfo.NextLevel, parameters);
+                            } else {
+                                DevExpress.ui.notify(`Drilldown failed: Key '${keyToPass}' not found.`, 'error', 6000);
+                            }
                         }
-
-                        loadReport(drillInfo.ChildReportID, drillInfo.ChildReportName, parameters, currentLevel + 1);
-                    }
+                    }).always(() => $("#loadingSpinner").hide());
+                }).fail(() => {
+                    $("#loadingSpinner").hide();
+                    DevExpress.ui.notify("Error fetching level configuration.", "error", 4000);
                 });
             }
         });
