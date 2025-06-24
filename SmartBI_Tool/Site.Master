@@ -137,8 +137,7 @@
         <%-- NEW FIXED SIDEBAR NAVIGATION --%>
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a class="navbar-brand" runat="server" href="~/">
-                    <i class="fas fa-chart-pie"></i>
+<a class="navbar-brand" runat="server" href="~/Default.aspx">                    <i class="fas fa-chart-pie"></i>
                     Insightify
                 </a>
             </div>
