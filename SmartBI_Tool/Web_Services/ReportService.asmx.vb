@@ -24,7 +24,7 @@ Public Class ReportService
     Private ReadOnly Serializer As New JavaScriptSerializer() With {.MaxJsonLength = Integer.MaxValue}
 
 #Region "Admin - Report Manager Methods"
-
+    'Returns a JSON list of all reports, including their main properties and first-level query/chart info
     <WebMethod()>
     Public Function GetReports() As String
         Dim query As String = "
@@ -41,7 +41,7 @@ Public Class ReportService
             ORDER BY R.ReportID DESC"
         Return ConvertDataTableToJson(GetDataTable(query, BIConnString))
     End Function
-
+    'Inserts a new report and its first report level into the database using the provided values
     <WebMethod()>
     Public Sub InsertReport(ByVal values As Dictionary(Of String, Object))
         Dim reportName As String = If(values.ContainsKey("ReportName"), values("ReportName")?.ToString(), "New Report")
@@ -74,7 +74,7 @@ Public Class ReportService
             End Try
         End Using
     End Sub
-
+    'Updates the report and its first level with new values for the specified report ID.
     <WebMethod()>
     Public Sub UpdateReport(ByVal key As Integer, ByVal values As Dictionary(Of String, Object))
         Using conn As New SqlConnection(BIConnString)
@@ -116,11 +116,12 @@ Public Class ReportService
             End Try
         End Using
     End Sub
-
+    'Deletes the report with the given ID from the database
     <WebMethod()>
     Public Sub DeleteReport(ByVal key As Integer)
         ExecuteNonQuery("DELETE FROM Reports WHERE ReportID=@ReportID", New List(Of SqlParameter) From {New SqlParameter("@ReportID", key)})
     End Sub
+    'Executes a provided SQL query (safely, with a row limit) and returns a JSON preview of the result or an error.
 
     <WebMethod()>
     Public Function PreviewQuery(ByVal query As String) As String
@@ -214,6 +215,7 @@ Public Class ReportService
         Return ConvertDataTableToJson(GetDataTable("SELECT ReportID, ReportName FROM Reports WHERE IsActive = 1 ORDER BY ReportName"))
     End Function
 
+    'Returns the list Of parameters For a given report, including their metadata And, If applicable, their selectable options.
     <WebMethod()>
     Public Function GetReportParameters(ByVal reportId As Integer) As String
         Dim paramsQuery As String = "SELECT ParameterName, Label, UIType, SourceQuery FROM ReportParameters WHERE ReportID = @ReportID"
